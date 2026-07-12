@@ -1,0 +1,397 @@
+// Curated guide data: Delhi's famous tourist places, their nearest metro
+// station, and genuinely famous restaurants nearby. This is stable reference
+// content (monuments and legendary eateries don't move); everything dynamic
+// (buses, events, air) is layered on top from live feeds.
+
+export interface Restaurant {
+  name: string;
+  knownFor: string;
+}
+
+export interface Place {
+  key: string;
+  name: string;
+  emoji: string;
+  blurb: string;
+  lat: number;
+  lng: number;
+  station: string; // nearest metro station (must exist in metroRouting STATIONS)
+  lineKeys: string[]; // metro line keys serving that station
+  restaurants: Restaurant[];
+}
+
+export const PLACES: Place[] = [
+  {
+    key: "india-gate",
+    name: "India Gate",
+    emoji: "🇮🇳",
+    blurb: "War memorial on Kartavya Path — evening lawns, ice cream & lights.",
+    lat: 28.6129,
+    lng: 77.2295,
+    station: "Central Secretariat",
+    lineKeys: ["yellow", "violet"],
+    restaurants: [
+      { name: "Andhra Bhavan Canteen", knownFor: "Legendary unlimited thali" },
+      { name: "Gulati (Pandara Road)", knownFor: "Butter chicken & dal makhani" },
+      { name: "Have More (Pandara Road)", knownFor: "North-Indian classics till late" },
+    ],
+  },
+  {
+    key: "red-fort",
+    name: "Red Fort",
+    emoji: "🏯",
+    blurb: "Mughal fortress of red sandstone; sound-and-light show at dusk.",
+    lat: 28.6562,
+    lng: 77.241,
+    station: "Lal Quila",
+    lineKeys: ["violet"],
+    restaurants: [
+      { name: "Karim's (Jama Masjid)", knownFor: "Mutton korma & kebabs since 1913" },
+      { name: "Al Jawahar", knownFor: "Nihari mornings, Mughlai classics" },
+      { name: "Moti Mahal (Daryaganj)", knownFor: "Claimed birthplace of butter chicken" },
+    ],
+  },
+  {
+    key: "jama-masjid",
+    name: "Jama Masjid",
+    emoji: "🕌",
+    blurb: "India's grandest mosque — climb the minaret for Old Delhi views.",
+    lat: 28.6507,
+    lng: 77.2334,
+    station: "Jama Masjid",
+    lineKeys: ["violet"],
+    restaurants: [
+      { name: "Karim's", knownFor: "The Old Delhi institution" },
+      { name: "Al Jawahar", knownFor: "Butter-soft nihari & sheermal" },
+      { name: "Aslam Chicken", knownFor: "Butter-bathed chicken tikka" },
+    ],
+  },
+  {
+    key: "chandni-chowk",
+    name: "Chandni Chowk",
+    emoji: "🏮",
+    blurb: "The 400-year-old bazaar — street food capital of the country.",
+    lat: 28.656,
+    lng: 77.2303,
+    station: "Chandni Chowk",
+    lineKeys: ["yellow"],
+    restaurants: [
+      { name: "Paranthe Wali Gali", knownFor: "Stuffed parathas fried in ghee" },
+      { name: "Old Famous Jalebi Wala", knownFor: "Fat desi-ghee jalebis since 1884" },
+      { name: "Natraj Dahi Bhalle", knownFor: "Two items, hundred-year queue" },
+    ],
+  },
+  {
+    key: "qutub-minar",
+    name: "Qutub Minar",
+    emoji: "🗼",
+    blurb: "73m victory tower from 1193 — UNESCO site amid Mehrauli ruins.",
+    lat: 28.5245,
+    lng: 77.1855,
+    station: "Qutab Minar",
+    lineKeys: ["yellow"],
+    restaurants: [
+      { name: "Olive Bar & Kitchen", knownFor: "Mediterranean under a banyan tree" },
+      { name: "Dramz (Mehrauli)", knownFor: "Qutub views from the terrace" },
+      { name: "Rooh (Mehrauli)", knownFor: "Progressive Indian dining" },
+    ],
+  },
+  {
+    key: "humayun-tomb",
+    name: "Humayun's Tomb",
+    emoji: "🕍",
+    blurb: "The garden-tomb that inspired the Taj Mahal.",
+    lat: 28.5933,
+    lng: 77.2507,
+    station: "Sarai Kale Khan - Nizamuddin",
+    lineKeys: ["pink"],
+    restaurants: [
+      { name: "Karim's (Nizamuddin)", knownFor: "Kebabs by the dargah" },
+      { name: "Ghalib Kabab Corner", knownFor: "Seekh kebab rolls" },
+      { name: "The Lodhi — Elan", knownFor: "Fine dining nearby" },
+    ],
+  },
+  {
+    key: "lotus-temple",
+    name: "Lotus Temple",
+    emoji: "🪷",
+    blurb: "Marble lotus of the Bahá'í faith — silence inside, gardens outside.",
+    lat: 28.5535,
+    lng: 77.2588,
+    station: "Kalkaji Mandir",
+    lineKeys: ["violet", "magenta"],
+    restaurants: [
+      { name: "Epicuria (Nehru Place)", knownFor: "Food mall next to the metro" },
+      { name: "Sagar Ratna (Defence Colony)", knownFor: "South-Indian staple" },
+    ],
+  },
+  {
+    key: "akshardham",
+    name: "Akshardham",
+    emoji: "🛕",
+    blurb: "Sprawling temple complex — carvings, exhibitions, musical fountain.",
+    lat: 28.6127,
+    lng: 77.2773,
+    station: "Akshardham",
+    lineKeys: ["blue"],
+    restaurants: [
+      { name: "Premvati Food Court", knownFor: "Sattvic thalis inside the complex" },
+    ],
+  },
+  {
+    key: "connaught-place",
+    name: "Connaught Place",
+    emoji: "⭕",
+    blurb: "Georgian colonnades, flagship stores, and Delhi's café culture.",
+    lat: 28.6315,
+    lng: 77.2167,
+    station: "Rajiv Chowk",
+    lineKeys: ["yellow", "blue"],
+    restaurants: [
+      { name: "Saravana Bhavan", knownFor: "Ghee roast dosa, filter coffee" },
+      { name: "Kake Da Hotel", knownFor: "No-frills butter chicken" },
+      { name: "United Coffee House", knownFor: "1942 grandeur, continental menu" },
+      { name: "Wenger's", knownFor: "Delhi's oldest bakery" },
+    ],
+  },
+  {
+    key: "hauz-khas",
+    name: "Hauz Khas Village",
+    emoji: "🏰",
+    blurb: "Medieval fort + lake, ringed by galleries, cafés and nightlife.",
+    lat: 28.5535,
+    lng: 77.1926,
+    station: "Hauz Khas",
+    lineKeys: ["yellow", "magenta"],
+    restaurants: [
+      { name: "Naivedyam", knownFor: "Temple-style South Indian" },
+      { name: "Coast Café", knownFor: "Coastal curries over the village" },
+      { name: "Hauz Khas Social", knownFor: "Lake views & cocktails" },
+    ],
+  },
+  {
+    key: "lodhi-garden",
+    name: "Lodhi Garden",
+    emoji: "🌳",
+    blurb: "15th-century tombs scattered through Delhi's loveliest park.",
+    lat: 28.5931,
+    lng: 77.2197,
+    station: "Jorbagh",
+    lineKeys: ["yellow"],
+    restaurants: [
+      { name: "Lodi — The Garden Restaurant", knownFor: "Al fresco Mediterranean" },
+      { name: "Khan Chacha (Khan Market)", knownFor: "Roomali rolls" },
+      { name: "Big Chill (Khan Market)", knownFor: "Pastas & giant sundaes" },
+    ],
+  },
+  {
+    key: "dilli-haat",
+    name: "Dilli Haat",
+    emoji: "🎪",
+    blurb: "Open-air crafts bazaar with food stalls from every Indian state.",
+    lat: 28.5729,
+    lng: 77.2085,
+    station: "Dilli Haat - INA",
+    lineKeys: ["yellow", "pink"],
+    restaurants: [
+      { name: "State food stalls", knownFor: "Momos to litti-chokha, all under one sky" },
+    ],
+  },
+  {
+    key: "raj-ghat",
+    name: "Raj Ghat",
+    emoji: "🕊️",
+    blurb: "Gandhi's memorial on the Yamuna — black marble and eternal flame.",
+    lat: 28.6406,
+    lng: 77.2495,
+    station: "Delhi Gate",
+    lineKeys: ["violet"],
+    restaurants: [
+      { name: "Moti Mahal (Daryaganj)", knownFor: "Tandoori pioneer since 1947" },
+    ],
+  },
+  {
+    key: "purana-qila",
+    name: "Purana Qila",
+    emoji: "🏛️",
+    blurb: "The 'Old Fort' — 16th-century ramparts, lake boating, zoo next door.",
+    lat: 28.6094,
+    lng: 77.2434,
+    station: "Supreme Court",
+    lineKeys: ["blue"],
+    restaurants: [
+      { name: "Café Lota", knownFor: "Regional Indian at the Crafts Museum" },
+    ],
+  },
+  {
+    key: "nehru-planetarium",
+    name: "Nehru Planetarium",
+    emoji: "🔭",
+    blurb: "Sky shows and space exhibits at Teen Murti House.",
+    lat: 28.6013,
+    lng: 77.1988,
+    station: "Lok Kalyan Marg",
+    lineKeys: ["yellow"],
+    restaurants: [
+      { name: "Bukhara (ITC Maurya)", knownFor: "World-famous dal Bukhara & tandoor" },
+      { name: "Dum Pukht (ITC Maurya)", knownFor: "Slow-cooked Awadhi royalty" },
+    ],
+  },
+  {
+    key: "jantar-mantar",
+    name: "Jantar Mantar",
+    emoji: "🧭",
+    blurb: "1724 astronomical instruments, giant and walkable.",
+    lat: 28.627,
+    lng: 77.2166,
+    station: "Janpath",
+    lineKeys: ["violet"],
+    restaurants: [
+      { name: "Saravana Bhavan (Janpath)", knownFor: "The dosa queue is worth it" },
+      { name: "DePaul's (Janpath)", knownFor: "Legendary cold coffee since 1956" },
+    ],
+  },
+  {
+    key: "bangla-sahib",
+    name: "Bangla Sahib Gurudwara",
+    emoji: "🛕",
+    blurb: "Golden-domed gurudwara with a serene sarovar — open to all.",
+    lat: 28.6265,
+    lng: 77.2091,
+    station: "Patel Chowk",
+    lineKeys: ["yellow"],
+    restaurants: [
+      { name: "Gurudwara Langar", knownFor: "Free community kitchen — an experience" },
+      { name: "Kake Da Hotel (CP)", knownFor: "No-frills butter chicken" },
+    ],
+  },
+  {
+    key: "khan-market",
+    name: "Khan Market",
+    emoji: "🛍️",
+    blurb: "Delhi's poshest little market — bookshops, boutiques, brunches.",
+    lat: 28.6003,
+    lng: 77.227,
+    station: "Khan Market",
+    lineKeys: ["violet"],
+    restaurants: [
+      { name: "Khan Chacha", knownFor: "Roomali rolls since 1972" },
+      { name: "Perch Wine & Coffee Bar", knownFor: "Delhi's favourite café-bar" },
+      { name: "Big Chill", knownFor: "Pastas & giant sundaes" },
+    ],
+  },
+  {
+    key: "sarojini-nagar",
+    name: "Sarojini Nagar Market",
+    emoji: "👗",
+    blurb: "Export-surplus bargain heaven — haggle hard, dress well.",
+    lat: 28.5776,
+    lng: 77.1994,
+    station: "Sarojini Nagar",
+    lineKeys: ["pink"],
+    restaurants: [
+      { name: "Sarojini food lane", knownFor: "Momos, chaat & shakes between hauls" },
+      { name: "Dilli Haat (INA, 1 stop)", knownFor: "State-cuisine stalls" },
+    ],
+  },
+  {
+    key: "select-citywalk",
+    name: "Select Citywalk (Saket)",
+    emoji: "🛒",
+    blurb: "South Delhi's favourite mall — flagship stores & an open plaza.",
+    lat: 28.5286,
+    lng: 77.2192,
+    station: "Malviya Nagar",
+    lineKeys: ["yellow"],
+    restaurants: [
+      { name: "Big Chill Cakery", knownFor: "Cheesecakes worth the queue" },
+      { name: "Mamagoto", knownFor: "Playful pan-Asian bowls" },
+    ],
+  },
+  {
+    key: "dlf-mall-of-india",
+    name: "DLF Mall of India (Noida)",
+    emoji: "🏬",
+    blurb: "One of India's biggest malls — 7 floors, ski-themed snow park.",
+    lat: 28.5677,
+    lng: 77.3211,
+    station: "Noida Sec -18",
+    lineKeys: ["blue"],
+    restaurants: [
+      { name: "Haldiram's", knownFor: "The everything-Indian food hall" },
+      { name: "Sagar Ratna (Sector 18)", knownFor: "South-Indian staple" },
+    ],
+  },
+  {
+    key: "cyberhub",
+    name: "DLF CyberHub (Gurugram)",
+    emoji: "🌆",
+    blurb: "Buzzing food & nightlife strip under the Cyber City towers.",
+    lat: 28.4951,
+    lng: 77.0895,
+    station: "Cyber City (Rapid Metro)",
+    lineKeys: ["rapid"],
+    restaurants: [
+      { name: "Farzi Café", knownFor: "Modern-Indian theatrics" },
+      { name: "Burma Burma", knownFor: "Burmese vegetarian, cult following" },
+      { name: "SodaBottleOpenerWala", knownFor: "Parsi café nostalgia" },
+    ],
+  },
+  {
+    key: "iskcon-temple",
+    name: "ISKCON Temple",
+    emoji: "🕉️",
+    blurb: "Grand Krishna temple with evening aartis and a Vedic museum.",
+    lat: 28.5561,
+    lng: 77.255,
+    station: "Nehru Place",
+    lineKeys: ["violet"],
+    restaurants: [
+      { name: "Govinda's", knownFor: "The temple's own sattvic buffet" },
+      { name: "Epicuria (Nehru Place)", knownFor: "Food mall by the metro" },
+    ],
+  },
+  {
+    key: "five-senses",
+    name: "Garden of Five Senses",
+    emoji: "🌸",
+    blurb: "Sculpture-dotted gardens made for slow evenings.",
+    lat: 28.5136,
+    lng: 77.1993,
+    station: "Saket",
+    lineKeys: ["yellow"],
+    restaurants: [
+      { name: "Fio Country Kitchen", knownFor: "Al fresco dining inside the garden" },
+      { name: "Magique", knownFor: "Fairy-lit garden dinners" },
+    ],
+  },
+  {
+    key: "chhatarpur",
+    name: "Chhatarpur Temple",
+    emoji: "⛩️",
+    blurb: "Sprawling marble temple complex — spectacular during Navratri.",
+    lat: 28.5069,
+    lng: 77.1755,
+    station: "Chhattarpur",
+    lineKeys: ["yellow"],
+    restaurants: [
+      { name: "The Grammar Room", knownFor: "Mehrauli's prettiest café" },
+      { name: "Olive Bar & Kitchen", knownFor: "Mediterranean under a banyan" },
+    ],
+  },
+  {
+    key: "kingdom-of-dreams",
+    name: "Kingdom of Dreams (Gurugram)",
+    emoji: "🎭",
+    blurb: "Bollywood-style live musicals and an indoor culture boulevard.",
+    lat: 28.4677,
+    lng: 77.0688,
+    station: "IFFCO Chowk",
+    lineKeys: ["yellow"],
+    restaurants: [
+      { name: "Culture Gully", knownFor: "Indoor street-food boulevard inside KOD" },
+    ],
+  },
+];
+
+export const PLACE_BY_KEY = new Map(PLACES.map((p) => [p.key, p]));

@@ -1,0 +1,17 @@
+{
+  "name": "Delhi City Dashboard",
+  "short_name": "DelhiDash",
+  "description": "Live Delhi buses, metro planner, events, food, air quality and weather.",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#070b18",
+  "theme_color": "#070b18",
+  "icons": [
+    {
+      "src": "/icon.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "any"
+    }
+  ]
+}
