@@ -38,7 +38,18 @@ export function RestaurantsPanel() {
             </div>
             {p.restaurants.map((r) => (
               <div className="rest-row" key={r.name}>
-                <b>{r.name}</b>
+                <b>
+                  {r.name}{" "}
+                  <a
+                    className="maps-link"
+                    href={`https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(`${r.name} ${p.name} Delhi`)}`}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    title="Open in Google Maps"
+                  >
+                    📍 map ↗
+                  </a>
+                </b>
                 <span>{r.knownFor}</span>
               </div>
             ))}

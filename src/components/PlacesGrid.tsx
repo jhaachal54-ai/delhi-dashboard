@@ -1,8 +1,11 @@
 "use client";
 
+import images from "@/data/placeImages.json";
 import { useLang } from "@/lib/i18n";
 import { METRO_LINES } from "@/lib/metro";
 import { PLACES } from "@/lib/places";
+
+const IMAGES = images as Record<string, string>;
 
 const LINE_BY_KEY = new Map(METRO_LINES.map((l) => [l.key, l]));
 
@@ -29,6 +32,10 @@ export function PlacesGrid() {
             onClick={() => plan(p.key)}
             aria-label={`Plan a visit to ${p.name}`}
           >
+            {IMAGES[p.key] && (
+              // eslint-disable-next-line @next/next/no-img-element
+              <img className="place-photo" src={IMAGES[p.key]} alt={p.name} loading="lazy" />
+            )}
             <div className="place-head">
               <span className="place-emoji">{p.emoji}</span>
               <div>

@@ -80,6 +80,10 @@ function normalize(e: any): EventItem {
   };
 }
 
+// Last successful payload — served as a fallback when the rate-limited free
+// API rejects us (429), so the page degrades to slightly-stale real data.
+let lastGood: ApiEnvelope<EventsData> | null = null;
+
 export async function GET() {
   const key = process.env.RAPIDAPI_KEY;
 
@@ -119,8 +123,15 @@ export async function GET() {
         events.length === 0 ? "No Delhi events returned right now." : undefined,
       data: { events, total: events.length },
     };
+    if (events.length > 0) lastGood = envelope;
     return NextResponse.json(envelope);
   } catch (err) {
+    if (lastGood) {
+      return NextResponse.json({
+        ...lastGood,
+        note: "Showing earlier listings — the free events API quota is used up right now.",
+      });
+    }
     const envelope: ApiEnvelope<EventsData> = {
       status: "error",
       source: "Real-Time Events Search (RapidAPI)",

@@ -248,6 +248,32 @@ const FARE_SLABS: [number, number][] = [
   [Infinity, 60],
 ];
 
+// Every station passed on a journey (for highlighting the route on the map):
+// for each segment, slice the service pattern between board and alight.
+export function routeStations(segs: MetroSeg[]): string[] {
+  const out: string[] = [];
+  for (const seg of segs) {
+    if (seg.line.key === "walk") {
+      if (out[out.length - 1] !== seg.board) out.push(seg.board);
+      out.push(seg.alight);
+      continue;
+    }
+    let sliced: string[] | null = null;
+    for (const pat of NET.lines[seg.line.key]?.patterns ?? []) {
+      const bi = pat.indexOf(seg.board);
+      const ai = pat.indexOf(seg.alight);
+      if (bi !== -1 && ai !== -1 && bi < ai) {
+        sliced = pat.slice(bi, ai + 1);
+        break;
+      }
+    }
+    for (const s of sliced ?? [seg.board, seg.alight]) {
+      if (out[out.length - 1] !== s) out.push(s);
+    }
+  }
+  return out;
+}
+
 export function journeyFareEstimate(segs: MetroSeg[]): {
   fare: number;
   km: number;

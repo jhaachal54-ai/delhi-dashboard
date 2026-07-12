@@ -53,6 +53,26 @@ export function TransitPanel() {
 
   // Selected bus route (click a dot) — highlights every bus on that route.
   const [selRoute, setSelRoute] = useState<string | null>(null);
+  // Full scheduled path of the selected route (from static GTFS via API).
+  const [routePath, setRoutePath] = useState<[number, number][] | null>(null);
+  useEffect(() => {
+    if (!selRoute) {
+      setRoutePath(null);
+      return;
+    }
+    let cancelled = false;
+    fetch(`/api/bus-route?route=${encodeURIComponent(selRoute)}`)
+      .then((r) => r.json())
+      .then((j) => {
+        if (!cancelled) setRoutePath(j.path ?? null);
+      })
+      .catch(() => {
+        if (!cancelled) setRoutePath(null);
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [selRoute]);
   // Dropped pin (click empty map) — shows the nearest metro station.
   const [pin, setPin] = useState<{ lat: number; lng: number } | null>(null);
   const pinNearest = pin ? nearestStation(pin.lat, pin.lng) : null;
@@ -172,6 +192,23 @@ export function TransitPanel() {
             );
           })()}
 
+          {/* full scheduled path of the selected route, with its stops */}
+          {routePath && (() => {
+            const pts = routePath.map(([lat, lng]) => project(lat, lng));
+            const d = pts
+              .map((p, i) => `${i === 0 ? "M" : "L"}${p.x.toFixed(1)},${p.y.toFixed(1)}`)
+              .join(" ");
+            return (
+              <g className="route-path">
+                <path d={d} fill="none" stroke="#ffffff" strokeWidth={3.4} opacity={0.25} strokeLinecap="round" strokeLinejoin="round" />
+                <path d={d} fill="none" stroke="#7ce0c3" strokeWidth={1.8} strokeLinecap="round" strokeLinejoin="round" pathLength={1} className="route-path-line" />
+                {pts.map((p, i) => (
+                  <circle key={i} cx={p.x} cy={p.y} r={1.7} fill="#eafff7" opacity={0.85} />
+                ))}
+              </g>
+            );
+          })()}
+
           {/* direction trails: previous position -> current */}
           {plotted.map((b) => {
             const prev = prevPos.current.get(b.id);
@@ -272,6 +309,9 @@ export function TransitPanel() {
           <div className="bus-info-grid">
             <div>
               <b>{selBuses.length}</b> buses live on this route now
+            </div>
+            <div>
+              <b>{routePath ? routePath.length : "—"}</b> stops on the full route
             </div>
             <div>
               <b>{selFare ? `₹${selFare[0]}–${selFare[1]}` : "n/a"}</b> fare (distance slab)

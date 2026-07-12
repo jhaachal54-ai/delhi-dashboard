@@ -2,7 +2,9 @@ import type { Metadata } from "next";
 import "./globals.css";
 import { FeedsProvider } from "@/lib/feeds";
 import { LangProvider } from "@/lib/i18n";
+import { BottomNav } from "@/components/BottomNav";
 import { SiteHeader } from "@/components/SiteHeader";
+import { SwRegister } from "@/components/SwRegister";
 
 export const metadata: Metadata = {
   title: "Delhi City Dashboard — live transit, events, air & weather",
@@ -28,9 +30,12 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
             {children}
             <footer className="foot">
               Data: Delhi Open Transit Data · Google Events (RapidAPI) · Open-Meteo · DMRC
-              network · curated Delhi guide. Refreshes automatically.
+              network · curated Delhi guide. Photos via Wikimedia Commons. Refreshes
+              automatically.
             </footer>
           </div>
+          <BottomNav />
+          <SwRegister />
         </LangProvider>
         </FeedsProvider>
       </body>

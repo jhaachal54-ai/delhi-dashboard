@@ -399,6 +399,11 @@ a {
 .map-pin {
   cursor: pointer;
 }
+.route-path-line {
+  stroke-dasharray: 1;
+  stroke-dashoffset: 1;
+  animation: drawLine 1.6s cubic-bezier(0.3, 0, 0.3, 1) forwards;
+}
 .map-pin-label {
   fill: #d9c7ff;
   font-size: 13px;
@@ -742,6 +747,22 @@ a {
   color: var(--purple);
   border-color: rgba(185, 140, 255, 0.5);
   background: rgba(185, 140, 255, 0.13);
+}
+.ics-btn {
+  font-size: 16px;
+  font-family: inherit;
+  background: rgba(255, 255, 255, 0.04);
+  border: 1px solid var(--panel-border);
+  border-radius: 9px;
+  width: 34px;
+  height: 34px;
+  cursor: pointer;
+  flex-shrink: 0;
+  transition: transform 0.2s, border-color 0.2s;
+}
+.ics-btn:hover {
+  transform: translateY(-1px);
+  border-color: rgba(110, 168, 254, 0.5);
 }
 
 /* ─── Shimmer skeleton ───────────────────────────────────────────────────── */
@@ -1263,6 +1284,60 @@ a {
   opacity: 0.6;
   cursor: wait;
 }
+.recent-plans {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+}
+.recent-chip {
+  font-size: 12.5px;
+  font-weight: 600;
+  font-family: inherit;
+  color: var(--text-dim);
+  padding: 5px 12px;
+  border-radius: 999px;
+  border: 1px solid var(--panel-border);
+  background: rgba(255, 255, 255, 0.03);
+  cursor: pointer;
+  transition: color 0.2s, border-color 0.2s, transform 0.2s;
+}
+.recent-chip:hover {
+  color: var(--text);
+  border-color: rgba(110, 168, 254, 0.45);
+  transform: translateY(-1px);
+}
+.swap-btn {
+  font-size: 12px;
+  font-weight: 700;
+  font-family: inherit;
+  color: var(--text-dim);
+  padding: 4px 12px;
+  border-radius: 999px;
+  border: 1px solid var(--panel-border);
+  background: rgba(255, 255, 255, 0.04);
+  cursor: pointer;
+  white-space: nowrap;
+  transition: color 0.2s, border-color 0.2s;
+}
+.swap-btn:hover {
+  color: var(--text);
+}
+.swap-btn.on {
+  color: var(--accent-2);
+  border-color: rgba(124, 224, 195, 0.5);
+  background: rgba(124, 224, 195, 0.1);
+}
+.maps-link {
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--accent);
+  text-decoration: none;
+  white-space: nowrap;
+}
+.maps-link:hover {
+  text-decoration: underline;
+}
 .plan-form {
   display: grid;
   grid-template-columns: repeat(3, 1fr);
@@ -1563,6 +1638,14 @@ a {
   font-weight: 500;
   color: var(--text-faint);
   margin-left: 6px;
+}
+.place-photo {
+  width: calc(100% + 32px);
+  margin: -16px -16px 0;
+  height: 130px;
+  object-fit: cover;
+  border-radius: var(--radius) var(--radius) 0 0;
+  border-bottom: 1px solid var(--panel-border);
 }
 .place-head {
   display: flex;
@@ -1923,6 +2006,58 @@ a {
 }
 :root[data-theme="light"] .note {
   background: rgba(43, 77, 158, 0.06);
+}
+
+/* ─── Bottom nav (mobile) ────────────────────────────────────────────────── */
+.bottom-nav {
+  display: none;
+}
+@media (max-width: 640px) {
+  .bottom-nav {
+    position: fixed;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    z-index: 50;
+    display: flex;
+    justify-content: space-around;
+    padding: 6px 4px calc(6px + env(safe-area-inset-bottom));
+    background: rgba(10, 15, 32, 0.92);
+    backdrop-filter: blur(16px);
+    -webkit-backdrop-filter: blur(16px);
+    border-top: 1px solid var(--panel-border);
+  }
+  :root[data-theme="light"] .bottom-nav {
+    background: rgba(255, 255, 255, 0.92);
+  }
+  .wrap {
+    padding-bottom: 96px;
+  }
+  .nav .navlink {
+    display: none; /* top links replaced by the bottom bar; toggles stay */
+  }
+}
+.bottom-nav-link {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 2px;
+  padding: 5px 12px;
+  border-radius: 12px;
+  text-decoration: none;
+  color: var(--text-faint);
+  transition: color 0.2s, background 0.2s;
+}
+.bottom-nav-link.active {
+  color: var(--accent-2);
+  background: rgba(124, 224, 195, 0.1);
+}
+.bn-icon {
+  font-size: 19px;
+}
+.bn-label {
+  font-size: 10.5px;
+  font-weight: 700;
 }
 
 @media (prefers-reduced-motion: reduce) {

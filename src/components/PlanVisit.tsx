@@ -10,6 +10,7 @@ import {
   journeyFareEstimate,
   nearestStation,
   planMetroRoute,
+  routeStations,
   STATION_NAMES,
   totalJourneyMinutes,
 } from "@/lib/metroRouting";
@@ -49,7 +50,18 @@ export function PlanVisit() {
   const [busLoading, setBusLoading] = useState(false);
   const [locState, setLocState] = useState<"idle" | "locating" | "done" | "error">("idle");
   const [shared, setShared] = useState(false);
+  const [returnTrip, setReturnTrip] = useState(false);
+  const [nearStop, setNearStop] = useState<{ name: string; km: number } | null>(null);
+  const [recents, setRecents] = useState<{ p: string; s: string; h: string }[]>([]);
   const { t } = useLang();
+
+  useEffect(() => {
+    try {
+      setRecents(JSON.parse(localStorage.getItem("recentPlans") ?? "[]"));
+    } catch {
+      /* ignore */
+    }
+  }, []);
 
   const place = PLACES.find((p) => p.key === placeKey) ?? PLACES[0];
 
@@ -119,17 +131,59 @@ export function PlanVisit() {
         }
         setHubKey(bestHub.key);
         setLocState("done");
+        // Also look up the truly nearest bus stop (10.5k stops from the GTFS).
+        fetch(`/api/nearest-stop?lat=${latitude}&lng=${longitude}`)
+          .then((r) => r.json())
+          .then((j) => setNearStop(j.stops?.[0] ?? null))
+          .catch(() => setNearStop(null));
       },
       () => setLocState("error"),
       { timeout: 10000, maximumAge: 60000 }
     );
   };
 
-  // Metro plan is instant, client-side.
+  // Metro plan is instant, client-side. Return trip swaps the endpoints.
   const segs = useMemo(
-    () => (station ? planMetroRoute(station, place.station) : null),
-    [station, place.station]
+    () =>
+      station
+        ? returnTrip
+          ? planMetroRoute(place.station, station)
+          : planMetroRoute(station, place.station)
+        : null,
+    [station, place.station, returnTrip]
   );
+
+  // Remember completed plans (for the "Recent" chips) and the outbound route's
+  // station list (so the metro map on the Transport page can highlight it).
+  useEffect(() => {
+    if (!station || !placeKey) return;
+    try {
+      const entry = { p: placeKey, s: station, h: hubKey };
+      const list = [entry, ...recents.filter((r) => !(r.p === entry.p && r.s === entry.s))].slice(0, 4);
+      setRecents(list);
+      localStorage.setItem("recentPlans", JSON.stringify(list));
+    } catch {
+      /* ignore */
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [station, placeKey, hubKey]);
+
+  useEffect(() => {
+    if (!segs || segs.length === 0 || returnTrip) return;
+    try {
+      localStorage.setItem(
+        "lastMetroRoute",
+        JSON.stringify({
+          stations: routeStations(segs),
+          from: station,
+          to: place.station,
+          ts: Date.now(),
+        })
+      );
+    } catch {
+      /* ignore */
+    }
+  }, [segs, station, place.station, returnTrip]);
 
   // Bus matching hits the live feed server-side.
   useEffect(() => {
@@ -182,12 +236,39 @@ export function PlanVisit() {
           🔗 {shared ? t("copied") : t("share_plan")}
         </button>
         {locState === "done" && (
-          <span className="hint">Picked your nearest metro station &amp; bus hub ✓</span>
+          <span className="hint">
+            Picked your nearest metro station &amp; bus hub ✓
+            {nearStop &&
+              ` · nearest bus stop: ${nearStop.name} (${nearStop.km < 1 ? `${Math.round(nearStop.km * 1000)} m` : `${nearStop.km} km`})`}
+          </span>
         )}
         {locState === "error" && (
           <span className="hint">Location unavailable — pick manually below.</span>
         )}
       </div>
+      {recents.length > 0 && (
+        <div className="recent-plans">
+          <span className="hint">Recent:</span>
+          {recents.map((r) => {
+            const p = PLACES.find((x) => x.key === r.p);
+            if (!p) return null;
+            return (
+              <button
+                key={`${r.p}-${r.s}`}
+                className="recent-chip"
+                onClick={() => {
+                  setPlaceKey(r.p);
+                  setStation(r.s);
+                  if (r.h) setHubKey(r.h);
+                }}
+              >
+                {p.emoji} {p.name} · from {r.s}
+              </button>
+            );
+          })}
+        </div>
+      )}
+
       <div className="plan-form">
         <label className="field">
           <span>{t("plan_where")}</span>
@@ -225,8 +306,26 @@ export function PlanVisit() {
 
       {/* ── Metro route ── */}
       <div className="result-block">
-        <div className="result-title">
-          🚇 {t("by_metro_pre")}<b>{place.station}</b>{t("by_metro_post")}
+        <div className="result-title" style={{ display: "flex", alignItems: "center", gap: 10 }}>
+          <span style={{ flex: 1 }}>
+            🚇{" "}
+            {returnTrip ? (
+              <>Return: <b>{place.station}</b> → <b>{station || "…"}</b></>
+            ) : (
+              <>
+                {t("by_metro_pre")}<b>{place.station}</b>{t("by_metro_post")}
+              </>
+            )}
+          </span>
+          {station && (
+            <button
+              className={`swap-btn ${returnTrip ? "on" : ""}`}
+              onClick={() => setReturnTrip(!returnTrip)}
+              title="Show the return journey"
+            >
+              ⇄ return trip
+            </button>
+          )}
         </div>
         {!station && <div className="hint">Pick your nearest metro station above to get the route.</div>}
         {station && segs === null && (
@@ -382,7 +481,18 @@ export function PlanVisit() {
         <div className="rest-list">
           {place.restaurants.map((r) => (
             <div className="rest-row" key={r.name}>
-              <b>{r.name}</b>
+              <b>
+                {r.name}{" "}
+                <a
+                  className="maps-link"
+                  href={`https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(`${r.name} ${place.name} Delhi`)}`}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  title="Open in Google Maps"
+                >
+                  📍 map ↗
+                </a>
+              </b>
               <span>{r.knownFor}</span>
             </div>
           ))}

@@ -2,7 +2,67 @@
 
 import { useMemo, useState } from "react";
 import { useFeeds } from "@/lib/feeds";
+import type { EventItem } from "@/lib/types";
 import { Panel } from "./Panel";
+
+type DateFilter = "all" | "today" | "tomorrow" | "weekend";
+
+// IST calendar date (yyyy-mm-dd) for a Date, and day-of-week (0=Sun).
+function istDate(d: Date): string {
+  return new Intl.DateTimeFormat("en-CA", { timeZone: "Asia/Kolkata" }).format(d);
+}
+function istDow(d: Date): number {
+  return new Date(d.toLocaleString("en-US", { timeZone: "Asia/Kolkata" })).getDay();
+}
+
+function matchesDate(e: EventItem, f: DateFilter): boolean {
+  if (f === "all") return true;
+  if (!e.date) return false;
+  const d = new Date(e.date);
+  if (Number.isNaN(d.getTime())) return false;
+  const now = new Date();
+  const today = istDate(now);
+  const tomorrow = istDate(new Date(now.getTime() + 86400_000));
+  const ed = istDate(d);
+  if (f === "today") return ed === today;
+  if (f === "tomorrow") return ed === tomorrow;
+  // weekend: upcoming Sat/Sun within the next 7 days
+  const dow = istDow(d);
+  const withinWeek = d.getTime() - now.getTime() < 7 * 86400_000 && d.getTime() > now.getTime() - 86400_000;
+  return (dow === 0 || dow === 6) && withinWeek;
+}
+
+// Build and download an .ics calendar file for an event (2h default duration).
+function downloadIcs(e: EventItem) {
+  if (!e.date) return;
+  const start = new Date(e.date);
+  const end = new Date(start.getTime() + 2 * 3600_000);
+  const fmt = (d: Date) => d.toISOString().replace(/[-:]/g, "").replace(/\.\d{3}/, "");
+  const esc = (s: string) => s.replace(/([,;\\])/g, "\\$1");
+  const ics = [
+    "BEGIN:VCALENDAR",
+    "VERSION:2.0",
+    "PRODID:-//Delhi City Dashboard//EN",
+    "BEGIN:VEVENT",
+    `UID:${e.id}@delhi-dashboard`,
+    `DTSTAMP:${fmt(new Date())}`,
+    `DTSTART:${fmt(start)}`,
+    `DTEND:${fmt(end)}`,
+    `SUMMARY:${esc(e.name)}`,
+    e.venue ? `LOCATION:${esc(e.venue)}` : "",
+    e.url ? `URL:${e.url}` : "",
+    "END:VEVENT",
+    "END:VCALENDAR",
+  ]
+    .filter(Boolean)
+    .join("\r\n");
+  const blob = new Blob([ics], { type: "text/calendar" });
+  const a = document.createElement("a");
+  a.href = URL.createObjectURL(blob);
+  a.download = `${e.name.slice(0, 40).replace(/[^\w ]/g, "")}.ics`;
+  a.click();
+  URL.revokeObjectURL(a.href);
+}
 
 function segmentEmoji(seg: string | null): string {
   switch (seg) {
@@ -38,6 +98,7 @@ export function EventsPanel() {
   const env = data;
   const d = env?.data;
   const [genre, setGenre] = useState<string | null>(null);
+  const [dateF, setDateF] = useState<DateFilter>("all");
 
   // Genres present in the current live batch, biggest first.
   const genres = useMemo(() => {
@@ -48,7 +109,9 @@ export function EventsPanel() {
     return [...counts.entries()].sort((a, b) => b[1] - a[1]);
   }, [d]);
 
-  const shown = (d?.events ?? []).filter((e) => !genre || e.segment === genre);
+  const shown = (d?.events ?? []).filter(
+    (e) => (!genre || e.segment === genre) && matchesDate(e, dateF)
+  );
 
   return (
     <Panel
@@ -71,6 +134,27 @@ export function EventsPanel() {
         <div className="empty">No upcoming events found right now.</div>
       )}
 
+      {d && d.events.length > 0 && (
+        <div className="genre-chips">
+          {(
+            [
+              ["all", "All dates"],
+              ["today", "Today"],
+              ["tomorrow", "Tomorrow"],
+              ["weekend", "Weekend"],
+            ] as [DateFilter, string][]
+          ).map(([k, label]) => (
+            <button
+              key={k}
+              className={`gchip ${dateF === k ? "on" : ""}`}
+              onClick={() => setDateF(k)}
+            >
+              {label}
+            </button>
+          ))}
+        </div>
+      )}
+
       {genres.length > 1 && (
         <div className="genre-chips">
           <button className={`gchip ${genre === null ? "on" : ""}`} onClick={() => setGenre(null)}>
@@ -89,7 +173,9 @@ export function EventsPanel() {
       )}
 
       {d && d.events.length > 0 && shown.length === 0 && (
-        <div className="empty">No {genre} events in this batch.</div>
+        <div className="empty">
+          No {genre ?? ""} events {dateF !== "all" ? `for ${dateF}` : "in this batch"}.
+        </div>
       )}
 
       {shown.length > 0 && (
@@ -120,6 +206,19 @@ export function EventsPanel() {
                   </div>
                 </div>
                 {e.priceLabel && <div className="price">{e.priceLabel}</div>}
+                {e.date && (
+                  <button
+                    className="ics-btn"
+                    title="Add to calendar"
+                    onClick={(ev) => {
+                      ev.preventDefault();
+                      ev.stopPropagation();
+                      downloadIcs(e);
+                    }}
+                  >
+                    📅
+                  </button>
+                )}
               </Wrapper>
             );
           })}
