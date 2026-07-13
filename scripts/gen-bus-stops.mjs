@@ -2,7 +2,8 @@
 // Run from the project root: node scripts/gen-bus-stops.mjs
 import { readFileSync, writeFileSync } from "fs";
 
-const src = "C:/Users/USER/Downloads/GTFS/stops.txt";
+const GTFS = process.env.BUS_GTFS_DIR ?? `${process.env.USERPROFILE ?? process.env.HOME}/Downloads/GTFS`;
+const src = `${GTFS}/stops.txt`;
 const out = "src/data/busStops.json";
 
 const lines = readFileSync(src, "utf8").trim().split(/\r?\n/);

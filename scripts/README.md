@@ -13,6 +13,7 @@ Run each from the **project root**: `node scripts/<name>.mjs`
 | `gen-place-images.mjs` | Wikipedia REST API (internet) | `placeImages.json` — place key → Wikimedia thumbnail URL |
 
 The **bus GTFS** is the ~350MB zip from https://otd.delhi.gov.in (login required),
-extracted to `C:/Users/USER/Downloads/GTFS`. It is too large to
-commit; re-download it if DTC renumbers routes, then rerun the bus generators.
+extracted to `Downloads/GTFS` in your user folder (or set `BUS_GTFS_DIR` to its
+location). It is too large to commit; re-download it if DTC renumbers routes,
+then rerun the bus generators.
 The **DMRC GTFS** is small and committed under `gtfs/dmrc/`.

@@ -3,7 +3,8 @@
 import { createReadStream, readFileSync, writeFileSync } from "fs";
 import { createInterface } from "readline";
 
-const src = "C:/Users/USER/Downloads/GTFS/fare_attributes.txt";
+const GTFS = process.env.BUS_GTFS_DIR ?? `${process.env.USERPROFILE ?? process.env.HOME}/Downloads/GTFS`;
+const src = `${GTFS}/fare_attributes.txt`;
 const namesPath = "src/data/busRouteNames.json";
 const out = "src/data/busFares.json";
 

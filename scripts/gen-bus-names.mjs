@@ -1,6 +1,7 @@
 import { readFileSync, writeFileSync, mkdirSync } from "fs";
 
-const src = "C:/Users/USER/Downloads/GTFS/routes.txt";
+const GTFS = process.env.BUS_GTFS_DIR ?? `${process.env.USERPROFILE ?? process.env.HOME}/Downloads/GTFS`;
+const src = `${GTFS}/routes.txt`;
 const outDir = "src/data";
 const out = outDir + "/busRouteNames.json";
 

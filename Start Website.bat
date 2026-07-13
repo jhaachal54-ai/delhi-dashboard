@@ -1,7 +1,7 @@
 @echo off
 title Delhi City Dashboard
 cd /d "%~dp0"
-set "PATH=C:\Users\USER\AppData\Local\Programs\nodejs\node-v24.18.0-win-x64;%PATH%"
+set "PATH=%LOCALAPPDATA%\Programs\nodejs\node-v24.18.0-win-x64;%PATH%"
 echo.
 echo   ============================================
 echo    Delhi City Dashboard

@@ -6,7 +6,7 @@
 import { createReadStream, readFileSync, writeFileSync } from "fs";
 import { createInterface } from "readline";
 
-const GTFS = "C:/Users/USER/Downloads/GTFS";
+const GTFS = process.env.BUS_GTFS_DIR ?? `${process.env.USERPROFILE ?? process.env.HOME}/Downloads/GTFS`;
 const names = JSON.parse(readFileSync("src/data/busRouteNames.json", "utf8"));
 const out = "src/data/busRoutePaths.json";
 
