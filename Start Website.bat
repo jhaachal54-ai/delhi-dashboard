@@ -13,9 +13,16 @@ echo   Your browser will open automatically when ready.
 echo.
 echo   To stop the website: just close this window.
 echo.
-rem Clear the build cache: closing this window kills the server abruptly,
-rem which can corrupt it and make every page show "404" next time.
+
+rem Stop any earlier copy of the site still running on port 3000 — a stale
+rem server holds the build folder locked and causes "Access is denied".
+for /f "tokens=5" %%a in ('netstat -aon ^| findstr ":3000 " ^| findstr LISTENING') do taskkill /f /pid %%a >nul 2>&1
+
+rem Fresh build cache each start (it lives under node_modules\.cache, which
+rem OneDrive never syncs, so sync locking can't corrupt it).
+if exist "node_modules\.cache\next-dist" rmdir /s /q "node_modules\.cache\next-dist" 2>nul
 if exist .next rmdir /s /q .next 2>nul
+
 start /b cmd /c "for /l %%i in (1,1,90) do (curl -s -o nul http://localhost:3000 && start "" http://localhost:3000 && exit || timeout /t 2 /nobreak >nul)"
 npm.cmd run dev
 echo.
