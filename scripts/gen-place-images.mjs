@@ -47,8 +47,8 @@ for (const [key, title] of Object.entries(TITLES)) {
     const j = await res.json();
     const url = j?.thumbnail?.source ?? null;
     if (url) {
-      // bump thumbnail width for card banners
-      out[key] = url.replace(/\/\d+px-/, "/480px-");
+      // use the URL exactly as the API returns it — rewriting the size can 400
+      out[key] = url;
       console.log("OK  ", key);
     } else {
       console.log("NOIMG", key);

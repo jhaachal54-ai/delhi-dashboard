@@ -1058,53 +1058,93 @@ a {
   transform: rotate(180deg);
   color: var(--accent-2);
 }
-.metro-stops {
-  /* newspaper-style columns: stops flow top-to-bottom, then spill into the
-     next column, using the panel's full width */
-  columns: 215px;
-  column-gap: 18px;
-  padding: 12px 10px 6px 18px;
+/* DMRC-app-style vertical timeline of stops */
+.metro-timeline {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  gap: 7px;
+  padding: 14px 6px 8px 12px;
+  max-width: 560px;
 }
-.metro-stop {
-  width: 100%;
-  break-inside: avoid;
-  display: inline-flex;
+.metro-timeline::before {
+  content: "";
+  position: absolute;
+  left: 19px;
+  top: 22px;
+  bottom: 22px;
+  border-left: 2px dashed var(--line-color, var(--accent));
+  opacity: 0.55;
+}
+.tl-row {
+  position: relative;
+  display: flex;
   align-items: center;
-  gap: 9px;
-  font-size: 13.5px;
+  gap: 13px;
+  width: 100%;
   font-family: inherit;
-  color: var(--text-dim);
-  background: none;
-  border: none;
   text-align: left;
-  padding: 4px 6px;
-  border-radius: 8px;
+  padding: 10px 14px 10px 0;
+  border: none;
+  background: rgba(255, 255, 255, 0.035);
+  border-radius: 10px;
   cursor: pointer;
-  transition: color 0.18s, background 0.18s;
+  transition: background 0.18s, transform 0.18s;
   animation: fadeUp 0.3s ease both;
-  animation-delay: calc(var(--k, 0) * 0.012s);
+  animation-delay: calc(var(--k, 0) * 0.015s);
 }
-.metro-stop:hover {
-  color: var(--text);
-  background: rgba(255, 255, 255, 0.05);
+.tl-row:hover {
+  background: rgba(110, 168, 254, 0.12);
+  transform: translateX(3px);
 }
-.metro-stop i {
-  width: 9px;
-  height: 9px;
+.tl-dot {
+  width: 13px;
+  height: 13px;
   border-radius: 50%;
+  border: 3px solid var(--line-color, var(--accent));
+  background: var(--bg);
+  margin-left: 10px;
   flex-shrink: 0;
-  box-shadow: 0 0 5px currentColor;
+  z-index: 1;
 }
-.metro-stop.ix {
+.tl-dot.ix {
+  background: #ffffff;
+  border-width: 4px;
+  width: 15px;
+  height: 15px;
+  margin-left: 9px;
+}
+.tl-name {
+  flex: 1;
+  font-size: 14px;
+  font-weight: 700;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
   color: var(--text);
-  font-weight: 600;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
-.metro-stop-tag {
-  font-size: 10.5px;
-  color: var(--text-faint);
-  border: 1px solid var(--panel-border);
+.tl-ix {
+  font-size: 15px;
+  color: var(--accent);
+  font-weight: 800;
+}
+.tl-status {
+  font-size: 11px;
+  font-weight: 800;
+  padding: 3px 12px;
   border-radius: 999px;
-  padding: 1px 8px;
+  text-transform: capitalize;
+  white-space: nowrap;
+}
+.tl-status.open {
+  color: #fff;
+  background: #22a349;
+}
+.tl-status.closed {
+  color: var(--text-dim);
+  background: rgba(255, 255, 255, 0.09);
 }
 .metro-row {
   display: flex;

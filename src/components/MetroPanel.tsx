@@ -85,27 +85,39 @@ export function MetroPanel() {
               </div>
 
               {isOpen && (
-                <div className="metro-stops">
+                <div className="metro-timeline" style={{ "--line-color": l.color } as React.CSSProperties}>
                   {stops.map((s, i) => {
-                    const interchange = (STATIONS[s]?.length ?? 1) > 1;
+                    const lines = STATIONS[s] ?? [];
+                    const interchange = lines.length > 1;
+                    // A station counts as open if any line serving it is running.
+                    const openNow =
+                      nowMin != null &&
+                      lines.some((k) => {
+                        const line = METRO_LINES.find((m) => m.key === k);
+                        return line ? lineStatus(line, nowMin).running : false;
+                      });
+                    const others = lines
+                      .filter((k) => k !== l.key)
+                      .map((k) => METRO_LINES.find((m) => m.key === k)?.name ?? k)
+                      .join(", ");
                     return (
                       <button
                         key={s}
-                        className={`metro-stop ${interchange ? "ix" : ""}`}
+                        className="tl-row"
                         onClick={() => router.push(`/?station=${encodeURIComponent(s)}`)}
-                        title={`Plan a trip from ${s}`}
+                        title={`Plan a trip from ${s}${interchange ? ` · interchange: ${others}` : ""}`}
                         style={{ "--k": i } as React.CSSProperties}
                       >
-                        <i style={{ background: interchange ? "#fff" : l.color }} />
-                        {s}
+                        <span className={`tl-dot ${interchange ? "ix" : ""}`} />
+                        <span className="tl-name">{s}</span>
                         {interchange && (
-                          <span className="metro-stop-tag">
-                            {STATIONS[s]
-                              .filter((k) => k !== l.key)
-                              .map((k) => METRO_LINES.find((m) => m.key === k)?.name ?? k)
-                              .join(" · ")}
+                          <span className="tl-ix" aria-label={`Interchange with ${others}`}>
+                            ⇄
                           </span>
                         )}
+                        <span className={`tl-status ${openNow ? "open" : "closed"}`}>
+                          {openNow ? "Open" : "Closed"}
+                        </span>
                       </button>
                     );
                   })}

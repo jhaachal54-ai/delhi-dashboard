@@ -20,7 +20,9 @@ export const CITY = {
 // How often each panel re-fetches (ms). Buses move fast; air/weather barely change.
 export const REFRESH = {
   transit: 20_000,
-  events: 15 * 60_000,
+  // events are disk-cached for 12h server-side (tiny free-API quota), so the
+  // client only needs to re-check occasionally
+  events: 6 * 3600_000,
   air: 5 * 60_000,
   weather: 5 * 60_000,
   trend: 30 * 60_000,

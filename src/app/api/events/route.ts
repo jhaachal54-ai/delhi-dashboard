@@ -1,3 +1,5 @@
+import { mkdirSync, readFileSync, writeFileSync } from "fs";
+import { join } from "path";
 import { NextResponse } from "next/server";
 import { fetchWithTimeout } from "@/lib/http";
 import type { ApiEnvelope, EventItem, EventsData } from "@/lib/types";
@@ -80,9 +82,27 @@ function normalize(e: any): EventItem {
   };
 }
 
-// Last successful payload — served as a fallback when the rate-limited free
-// API rejects us (429), so the page degrades to slightly-stale real data.
-let lastGood: ApiEnvelope<EventsData> | null = null;
+// The free events API has a small monthly quota, so results are cached to
+// disk: a fresh cache (<12h) is served without touching the API at all
+// (≈2 calls/day worst case), and a stale cache beats an error any day.
+const CACHE_FILE = join(process.cwd(), ".cache", "events.json");
+const CACHE_TTL_MS = 12 * 3600_000;
+
+function readCache(): { ts: number; envelope: ApiEnvelope<EventsData> } | null {
+  try {
+    return JSON.parse(readFileSync(CACHE_FILE, "utf8"));
+  } catch {
+    return null;
+  }
+}
+function writeCache(envelope: ApiEnvelope<EventsData>) {
+  try {
+    mkdirSync(join(process.cwd(), ".cache"), { recursive: true });
+    writeFileSync(CACHE_FILE, JSON.stringify({ ts: Date.now(), envelope }));
+  } catch {
+    /* cache is best-effort */
+  }
+}
 
 export async function GET() {
   const key = process.env.RAPIDAPI_KEY;
@@ -96,6 +116,12 @@ export async function GET() {
       data: sampleEvents(),
     };
     return NextResponse.json(envelope);
+  }
+
+  // Serve straight from a fresh disk cache — zero quota cost.
+  const cached = readCache();
+  if (cached && Date.now() - cached.ts < CACHE_TTL_MS) {
+    return NextResponse.json(cached.envelope);
   }
 
   try {
@@ -123,21 +149,22 @@ export async function GET() {
         events.length === 0 ? "No Delhi events returned right now." : undefined,
       data: { events, total: events.length },
     };
-    if (events.length > 0) lastGood = envelope;
+    if (events.length > 0) writeCache(envelope);
     return NextResponse.json(envelope);
-  } catch (err) {
-    if (lastGood) {
+  } catch {
+    // Quota exhausted or upstream down: any cached listings beat nothing.
+    if (cached) {
       return NextResponse.json({
-        ...lastGood,
+        ...cached.envelope,
         note: "Showing earlier listings — the free events API quota is used up right now.",
       });
     }
     const envelope: ApiEnvelope<EventsData> = {
-      status: "error",
+      status: "sample",
       source: "Real-Time Events Search (RapidAPI)",
       fetchedAt: new Date().toISOString(),
-      note: err instanceof Error ? err.message : "Failed to fetch events.",
-      data: { events: [], total: 0 },
+      note: "The free events API quota is exhausted and no cached listings exist yet — showing sample events. Live listings resume automatically when the quota resets.",
+      data: sampleEvents(),
     };
     return NextResponse.json(envelope, { status: 200 });
   }
