@@ -82,11 +82,12 @@ function normalize(e: any): EventItem {
   };
 }
 
-// The free events API has a small monthly quota, so results are cached to
-// disk: a fresh cache (<12h) is served without touching the API at all
-// (≈2 calls/day worst case), and a stale cache beats an error any day.
+// The free events API allows only 50 requests/month, so results are cached to
+// disk: a fresh cache (<24h) is served without touching the API at all
+// (≈1 call/day ≈ 30/month, safely under the cap), and a stale cache beats an
+// error any day.
 const CACHE_FILE = join(process.cwd(), ".cache", "events.json");
-const CACHE_TTL_MS = 12 * 3600_000;
+const CACHE_TTL_MS = 24 * 3600_000;
 
 function readCache(): { ts: number; envelope: ApiEnvelope<EventsData> } | null {
   try {
