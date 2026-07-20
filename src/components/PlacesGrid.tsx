@@ -4,6 +4,8 @@ import images from "@/data/placeImages.json";
 import { useLang } from "@/lib/i18n";
 import { METRO_LINES } from "@/lib/metro";
 import { PLACES } from "@/lib/places";
+import { bestTimeFor } from "@/lib/placeTime";
+import { gradientFor } from "@/lib/thumbs";
 
 const IMAGES = images as Record<string, string>;
 
@@ -32,9 +34,17 @@ export function PlacesGrid() {
             onClick={() => plan(p.key)}
             aria-label={`Plan a visit to ${p.name}`}
           >
-            {IMAGES[p.key] && (
+            {IMAGES[p.key] ? (
               // eslint-disable-next-line @next/next/no-img-element
               <img className="place-photo" src={IMAGES[p.key]} alt={p.name} loading="lazy" />
+            ) : (
+              <div
+                className="place-photo place-photo-ph"
+                style={{ background: gradientFor(p.key) }}
+                aria-hidden="true"
+              >
+                <span>{p.emoji}</span>
+              </div>
             )}
             <div className="place-head">
               <span className="place-emoji">{p.emoji}</span>
@@ -43,6 +53,7 @@ export function PlacesGrid() {
                 <div className="place-blurb">{p.blurb}</div>
               </div>
             </div>
+            <div className="place-besttime">🕘 Best time: {bestTimeFor(p)}</div>
             <div className="place-metro">
               🚇 <b>{p.station}</b>
               <span className="line-dots">

@@ -1,4 +1,4 @@
-// Central configuration for the Delhi City Dashboard.
+// Central configuration for NETRA (NCR Events, Transit, Rain & Air).
 
 export const CITY = {
   name: "Delhi",
@@ -27,6 +27,10 @@ export const REFRESH = {
   weather: 5 * 60_000,
   trend: 30 * 60_000,
   regions: 10 * 60_000,
+  flights: 10 * 60_000,
+  trains: 10 * 60_000,
+  news: 30 * 60_000,
+  rates: 12 * 3600_000,
 } as const;
 
 // A bus fix older than this (seconds) is considered stale.

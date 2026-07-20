@@ -5,7 +5,8 @@ import { usePathname } from "next/navigation";
 import { useLang, type TKey } from "@/lib/i18n";
 
 const LINKS: { href: string; k: TKey; icon: string }[] = [
-  { href: "/", k: "nav_home", icon: "🏠" },
+  { href: "/", k: "nav_about", icon: "👁️" },
+  { href: "/home", k: "nav_home", icon: "🏠" },
   { href: "/weather", k: "nav_weather", icon: "🌦️" },
   { href: "/events", k: "nav_events", icon: "🎫" },
   { href: "/transport", k: "nav_transport", icon: "🚇" },

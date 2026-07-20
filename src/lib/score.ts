@@ -10,6 +10,17 @@ export interface HeadOutScore {
   ready: boolean; // false until we have at least air + weather
 }
 
+// US EPA AQI category label (region feed carries only the number, not a label).
+function aqiBand(aqi: number | null): string {
+  if (aqi == null) return "";
+  if (aqi <= 50) return "Good";
+  if (aqi <= 100) return "Moderate";
+  if (aqi <= 150) return "Unhealthy (sensitive)";
+  if (aqi <= 200) return "Unhealthy";
+  if (aqi <= 300) return "Very unhealthy";
+  return "Hazardous";
+}
+
 // Open-Meteo hourly times are timezone-local strings ("2026-07-11T20:00");
 // read the hour straight off the string to avoid Date timezone ambiguity.
 function hourLabel(t: string): string {
@@ -86,16 +97,27 @@ const BANDS: { min: number; verdict: string; color: string; cta: string }[] = [
 // A single "should I head out right now?" score for Delhi, blending air
 // quality, how hot it feels, rain, and whether anything's happening tonight.
 // Deliberately opinionated for a hot, polluted city: AQI and heat dominate.
+// When the user's location is known, we swap in their nearest region's AQI so
+// the verdict reflects the air where they actually are, not always Connaught Place.
+export interface ScoreOpts {
+  aqiOverride?: number | null;
+  aqiLabel?: string | null; // e.g. "Rohini (North-West)"
+}
+
 export function computeHeadOut(
   air: AirData | null,
   weather: WeatherData | null,
-  events: EventsData | null
+  events: EventsData | null,
+  opts: ScoreOpts = {}
 ): HeadOutScore {
   const reasons: HeadOutScore["reasons"] = [];
   let score = 100;
 
-  // Air quality — the biggest lever in Delhi.
-  const aqi = air?.usAqi ?? null;
+  // Air quality — the biggest lever in Delhi. Prefer the user's nearest-region
+  // reading when we have it; fall back to the default (central) air feed.
+  const usingRegion = opts.aqiOverride != null;
+  const aqi = usingRegion ? opts.aqiOverride! : air?.usAqi ?? null;
+  const aqiCategory = usingRegion ? aqiBand(aqi) : air?.category ?? "";
   if (aqi != null) {
     let penalty = 0;
     if (aqi <= 50) penalty = 0;
@@ -107,7 +129,7 @@ export function computeHeadOut(
     score -= penalty;
     reasons.push({
       icon: "🌫️",
-      text: `Air quality ${aqi} · ${air?.category ?? ""}`.trim(),
+      text: `Air quality ${aqi} · ${aqiCategory}${usingRegion && opts.aqiLabel ? ` · ${opts.aqiLabel}` : ""}`.trim(),
       tone: aqi <= 100 ? "good" : aqi <= 150 ? "warn" : "bad",
     });
   }

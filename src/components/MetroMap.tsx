@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import { METRO_LINES } from "@/lib/metro";
 import { LINE_PATTERNS, STATION_COORDS } from "@/lib/metroRouting";
@@ -61,8 +61,91 @@ export function MetroMap() {
   }, []);
 
   const pick = (name: string) => {
-    router.push(`/?station=${encodeURIComponent(name)}`);
+    router.push(`/home?station=${encodeURIComponent(name)}`);
   };
+
+  // Trains glide along the real line geometry via SVG motion paths. Gated on
+  // reduced-motion (SMIL isn't covered by the global CSS motion kill-switch).
+  const [motionOk, setMotionOk] = useState(false);
+  useEffect(() => {
+    setMotionOk(!window.matchMedia("(prefers-reduced-motion: reduce)").matches);
+  }, []);
+
+  // Every drawn line pattern, with a stable id so <mpath> can reference it.
+  const linePaths = useMemo(() => {
+    const out: { id: string; d: string; color: string; stops: number; first: boolean }[] = [];
+    for (const [key, patterns] of Object.entries(LINE_PATTERNS)) {
+      const color = LINE_BY_KEY.get(key)?.color ?? "#888";
+      patterns.forEach((pat, pi) => {
+        const pts = pat
+          .map((n) => coordByName.get(n))
+          .filter((s): s is NonNullable<typeof s> => !!s)
+          .map((s) => project(s.lat, s.lng));
+        if (pts.length < 2) return;
+        out.push({
+          id: `mp-${key}-${pi}`,
+          d: pts.map((p, i) => `${i === 0 ? "M" : "L"}${p.x.toFixed(1)},${p.y.toFixed(1)}`).join(" "),
+          color,
+          stops: pts.length,
+          first: pi === 0,
+        });
+      });
+    }
+    return out;
+  }, [project, coordByName]);
+
+  // Drive the trains from rAF + getPointAtLength (rather than SMIL, which not
+  // every engine reliably advances). Each train ping-pongs end-to-end.
+  const svgRef = useRef<SVGSVGElement>(null);
+  const trainRefs = useRef(new Map<string, SVGCircleElement>());
+  const trains = useMemo(
+    () =>
+      linePaths
+        .filter((lp) => lp.first)
+        .flatMap((lp) =>
+          [0, 0.5].map((phase) => ({
+            key: `${lp.id}-t${phase}`,
+            pathId: lp.id,
+            color: lp.color,
+            phase,
+            dur: (18 + lp.stops * 0.6) * 1000,
+          }))
+        ),
+    [linePaths]
+  );
+
+  useEffect(() => {
+    if (!motionOk || saved) return;
+    const svg = svgRef.current;
+    if (!svg) return;
+    const specs = trains
+      .map((t) => {
+        const el = svg.querySelector<SVGPathElement>(`[id="${t.pathId}"]`);
+        if (!el) return null;
+        const len = el.getTotalLength();
+        return len > 1 ? { ...t, el, len } : null;
+      })
+      .filter((s): s is NonNullable<typeof s> => !!s);
+    if (specs.length === 0) return;
+
+    let raf = 0;
+    const start = performance.now();
+    const tick = (now: number) => {
+      const t = now - start;
+      for (const s of specs) {
+        const dot = trainRefs.current.get(s.key);
+        if (!dot) continue;
+        const p = ((t / s.dur + s.phase) % 1 + 1) % 1;
+        const tri = p < 0.5 ? p * 2 : (1 - p) * 2; // 0→1→0
+        const pt = s.el.getPointAtLength(tri * s.len);
+        dot.setAttribute("cx", pt.x.toFixed(1));
+        dot.setAttribute("cy", pt.y.toFixed(1));
+      }
+      raf = requestAnimationFrame(tick);
+    };
+    raf = requestAnimationFrame(tick);
+    return () => cancelAnimationFrame(raf);
+  }, [motionOk, saved, trains]);
 
   return (
     <Panel
@@ -82,35 +165,42 @@ export function MetroMap() {
         </div>
       )}
       <div className="metro-map">
-        <svg viewBox={`0 0 ${W} ${H}`} role="img" aria-label="Delhi Metro network map">
+        <svg ref={svgRef} viewBox={`0 0 ${W} ${H}`} role="img" aria-label="Delhi Metro network map">
           {/* line paths — every service pattern, so branches are drawn too */}
-          {Object.entries(LINE_PATTERNS).map(([key, patterns]) => {
-            const color = LINE_BY_KEY.get(key)?.color ?? "#888";
-            return patterns.map((pat, pi) => {
-              const pts = pat
-                .map((n) => coordByName.get(n))
-                .filter((s): s is NonNullable<typeof s> => !!s)
-                .map((s) => project(s.lat, s.lng));
-              if (pts.length < 2) return null;
-              const dAttr = pts
-                .map((p, i) => `${i === 0 ? "M" : "L"}${p.x.toFixed(1)},${p.y.toFixed(1)}`)
-                .join(" ");
-              return (
-                <path
-                  key={`${key}-${pi}`}
-                  d={dAttr}
-                  fill="none"
-                  stroke={color}
-                  strokeWidth={3}
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  opacity={saved ? 0.16 : 0.75}
-                  pathLength={1}
-                  className="metro-map-line"
-                />
-              );
-            });
-          })}
+          {linePaths.map((lp) => (
+            <path
+              key={lp.id}
+              id={lp.id}
+              d={lp.d}
+              fill="none"
+              stroke={lp.color}
+              strokeWidth={3}
+              strokeLinecap="round"
+              strokeLinejoin="round"
+              opacity={saved ? 0.16 : 0.75}
+              pathLength={1}
+              className="metro-map-line"
+            />
+          ))}
+
+          {/* trains gliding along each line's real geometry (positioned by rAF) */}
+          {motionOk &&
+            !saved &&
+            trains.map((t) => (
+              <circle
+                key={t.key}
+                ref={(el) => {
+                  if (el) trainRefs.current.set(t.key, el);
+                  else trainRefs.current.delete(t.key);
+                }}
+                cx={-99}
+                cy={-99}
+                r={3.6}
+                style={{ fill: "var(--mk-train)", stroke: t.color }}
+                strokeWidth={2}
+                className="metro-train"
+              />
+            ))}
 
           {/* planned route overlay */}
           {saved && (() => {
@@ -124,11 +214,11 @@ export function MetroMap() {
               .join(" ");
             return (
               <g>
-                <path d={d} fill="none" stroke="#ffffff" strokeWidth={6} opacity={0.22} strokeLinecap="round" strokeLinejoin="round" />
+                <path d={d} fill="none" style={{ stroke: "var(--mk-halo)" }} strokeWidth={6} opacity={0.28} strokeLinecap="round" strokeLinejoin="round" />
                 <path
                   d={d}
                   fill="none"
-                  stroke="#7ce0c3"
+                  style={{ stroke: "var(--mk-route)" }}
                   strokeWidth={3.2}
                   strokeLinecap="round"
                   strokeLinejoin="round"
@@ -151,8 +241,14 @@ export function MetroMap() {
                   cx={x}
                   cy={y}
                   r={hovered ? 8 : routed ? 5.5 : interchange ? 5 : 3}
-                  fill={routed ? "#7ce0c3" : interchange ? "#ffffff" : "#c9d4f0"}
-                  stroke="#0a1026"
+                  style={{
+                    fill: routed
+                      ? "var(--mk-route)"
+                      : interchange
+                        ? "var(--mk-station-ix)"
+                        : "var(--mk-station)",
+                    stroke: "var(--mk-station-stroke)",
+                  }}
                   strokeWidth={interchange ? 2 : 1}
                   className="metro-map-station"
                   onClick={() => pick(s.name)}

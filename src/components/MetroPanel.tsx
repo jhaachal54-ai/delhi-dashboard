@@ -104,7 +104,7 @@ export function MetroPanel() {
                       <button
                         key={s}
                         className="tl-row"
-                        onClick={() => router.push(`/?station=${encodeURIComponent(s)}`)}
+                        onClick={() => router.push(`/home?station=${encodeURIComponent(s)}`)}
                         title={`Plan a trip from ${s}${interchange ? ` · interchange: ${others}` : ""}`}
                         style={{ "--k": i } as React.CSSProperties}
                       >

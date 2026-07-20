@@ -62,6 +62,8 @@ export async function GET() {
       return {
         key: r.key,
         name: r.name,
+        lat: r.lat,
+        lng: r.lng,
         temperature: c.temperature_2m ?? null,
         apparent: c.apparent_temperature ?? null,
         precipitation: c.precipitation ?? null,

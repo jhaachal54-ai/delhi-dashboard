@@ -14,10 +14,11 @@ const WX_URL =
     longitude: String(CITY.lng),
     current:
       "temperature_2m,relative_humidity_2m,apparent_temperature,is_day,precipitation,weather_code,wind_speed_10m,uv_index",
-    daily: "sunrise,sunset",
+    daily:
+      "sunrise,sunset,temperature_2m_max,temperature_2m_min,precipitation_sum,precipitation_probability_max,weather_code",
     hourly: "temperature_2m,apparent_temperature,precipitation_probability,weather_code,is_day",
-    // two days so a full 24h of future hours exists even late at night
-    forecast_days: "2",
+    // 7 days for the forward forecast; a full 24h of future hours also fits
+    forecast_days: "7",
     timezone: CITY.timezone,
   }).toString();
 
@@ -26,6 +27,16 @@ function clockOf(iso: string | null | undefined): string | null {
   if (!iso) return null;
   const t = iso.split("T")[1];
   return t ? t.slice(0, 5) : null;
+}
+
+// "2026-07-15" -> "Wed 15" (parsed off the string to avoid tz drift).
+function dayLabel(date: string): string {
+  const [y, m, d] = date.split("-").map(Number);
+  const wd = new Date(Date.UTC(y, m - 1, d)).toLocaleDateString("en-GB", {
+    weekday: "short",
+    timeZone: "UTC",
+  });
+  return `${wd} ${d}`;
 }
 
 // WMO weather interpretation codes -> label + emoji.
@@ -90,6 +101,22 @@ export async function GET() {
         };
       });
 
+    // 7-day forward forecast (daily arrays start today).
+    const dTimes: string[] = j?.daily?.time ?? [];
+    const daily = dTimes.slice(0, 7).map((date, i) => {
+      const code = j.daily?.weather_code?.[i] ?? null;
+      return {
+        date,
+        label: dayLabel(date),
+        tempMax: j.daily?.temperature_2m_max?.[i] ?? null,
+        tempMin: j.daily?.temperature_2m_min?.[i] ?? null,
+        rainSum: j.daily?.precipitation_sum?.[i] ?? null,
+        rainProb: j.daily?.precipitation_probability_max?.[i] ?? null,
+        code,
+        emoji: describe(code, true).emoji,
+      };
+    });
+
     const data: WeatherData = {
       temperature: c.temperature_2m ?? null,
       apparent: c.apparent_temperature ?? null,
@@ -105,6 +132,7 @@ export async function GET() {
       sunrise: clockOf(j?.daily?.sunrise?.[0]),
       sunset: clockOf(j?.daily?.sunset?.[0]),
       hourly,
+      daily,
     };
 
     const envelope: ApiEnvelope<WeatherData> = {
@@ -135,6 +163,7 @@ export async function GET() {
         sunrise: null,
         sunset: null,
         hourly: [],
+        daily: [],
       },
     };
     return NextResponse.json(envelope, { status: 200 });

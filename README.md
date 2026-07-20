@@ -1,6 +1,7 @@
-# Delhi City Dashboard
+# NETRA — NCR Events, Transit, Rain & Air
 
-A real-time city guide for **Delhi**, built with Next.js (App Router) + TypeScript.
+**NETRA** (नेत्र, Sanskrit for "the eye") is a real-time city guide for **Delhi**,
+built with Next.js (App Router) + TypeScript.
 It pulls **live public data** and is designed to handle the messiness of real feeds —
 missing fields, stale GPS fixes, bogus coordinates, and sparse results — gracefully.
 

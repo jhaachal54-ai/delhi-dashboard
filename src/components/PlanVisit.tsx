@@ -17,6 +17,7 @@ import {
 import { PLACES } from "@/lib/places";
 import type { ApiEnvelope, BusConnectData, EventItem } from "@/lib/types";
 import { Panel } from "./Panel";
+import { RestaurantRow } from "./RestaurantRow";
 
 const EVENT_RADIUS_KM = 7;
 
@@ -94,7 +95,8 @@ export function PlanVisit() {
     if (station) params.set("station", station);
     if (hubKey) params.set("hub", hubKey);
     const qs = params.toString();
-    window.history.replaceState(null, "", qs ? `/?${qs}` : "/");
+    const path = window.location.pathname;
+    window.history.replaceState(null, "", qs ? `${path}?${qs}` : path);
   }, [placeKey, station, hubKey]);
 
   const sharePlan = async () => {
@@ -118,6 +120,16 @@ export function PlanVisit() {
     navigator.geolocation.getCurrentPosition(
       (pos) => {
         const { latitude, longitude } = pos.coords;
+        // Share the fix so the "should I head out?" score can use the air
+        // quality of the user's own region instead of the city default.
+        try {
+          localStorage.setItem("userLoc", JSON.stringify({ lat: latitude, lng: longitude }));
+          window.dispatchEvent(
+            new CustomEvent("netra-loc", { detail: { lat: latitude, lng: longitude } })
+          );
+        } catch {
+          /* ignore */
+        }
         const st = nearestStation(latitude, longitude);
         if (st) setStation(st.name);
         let bestHub = BUS_HUBS[0];
@@ -248,20 +260,23 @@ export function PlanVisit() {
       </div>
       {recents.length > 0 && (
         <div className="recent-plans">
-          <span className="hint">Recent:</span>
-          {recents.map((r) => {
+          <span className="hint">{t("recent_label")}</span>
+          {recents.map((r, i) => {
             const p = PLACES.find((x) => x.key === r.p);
             if (!p) return null;
+            const usual = i === 0;
             return (
               <button
                 key={`${r.p}-${r.s}`}
-                className="recent-chip"
+                className={`recent-chip ${usual ? "usual" : ""}`}
+                title={usual ? t("usual_route") : undefined}
                 onClick={() => {
                   setPlaceKey(r.p);
                   setStation(r.s);
                   if (r.h) setHubKey(r.h);
                 }}
               >
+                {usual ? "⭐ " : ""}
                 {p.emoji} {p.name} · from {r.s}
               </button>
             );
@@ -282,14 +297,19 @@ export function PlanVisit() {
         </label>
         <label className="field">
           <span>{t("plan_station")}</span>
-          <select value={station} onChange={(e) => setStation(e.target.value)} id="plan-station">
-            <option value="">— choose a station —</option>
+          <input
+            id="plan-station"
+            list="station-options"
+            value={station}
+            placeholder={t("plan_station_ph")}
+            autoComplete="off"
+            onChange={(e) => setStation(e.target.value)}
+          />
+          <datalist id="station-options">
             {STATION_NAMES.map((s) => (
-              <option key={s} value={s}>
-                {s}
-              </option>
+              <option key={s} value={s} />
             ))}
-          </select>
+          </datalist>
         </label>
         <label className="field">
           <span>{t("plan_hub")}</span>
@@ -480,21 +500,7 @@ export function PlanVisit() {
         </div>
         <div className="rest-list">
           {place.restaurants.map((r) => (
-            <div className="rest-row" key={r.name}>
-              <b>
-                {r.name}{" "}
-                <a
-                  className="maps-link"
-                  href={`https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(`${r.name} ${place.name} Delhi`)}`}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  title="Open in Google Maps"
-                >
-                  📍 map ↗
-                </a>
-              </b>
-              <span>{r.knownFor}</span>
-            </div>
+            <RestaurantRow key={r.name} r={r} area={place.name} />
           ))}
         </div>
         <div className="hint" style={{ display: "flex", alignItems: "center", gap: 6 }}>

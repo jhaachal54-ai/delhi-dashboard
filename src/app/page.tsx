@@ -1,17 +1,12 @@
-import { HeadOutPanel } from "@/components/HeadOutPanel";
-import { PlanVisit } from "@/components/PlanVisit";
-import { PlacesGrid } from "@/components/PlacesGrid";
+import type { Metadata } from "next";
+import { AboutContent } from "@/components/AboutContent";
 
-export default function HomePage() {
-  return (
-    <>
-      <HeadOutPanel />
-      <div className="grid">
-        <div className="col-full" style={{ "--i": 0 } as React.CSSProperties}>
-          <PlanVisit />
-        </div>
-      </div>
-      <PlacesGrid />
-    </>
-  );
+export const metadata: Metadata = {
+  title: "NETRA — the eye on Delhi",
+  description:
+    "Why NETRA? नेत्र is Sanskrit for 'the eye' — and an acronym for NCR, Events, Transit, Rain & Air. One live view of everything that decides your day in Delhi.",
+};
+
+export default function AboutPage() {
+  return <AboutContent />;
 }

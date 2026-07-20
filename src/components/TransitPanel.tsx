@@ -85,6 +85,14 @@ export function TransitPanel() {
     null
   );
   const selFare = selRoute ? busFare(selRoute) : null;
+  // Honest "how close is a bus" readout: the open feed gives positions but no
+  // reliable speed or per-route timetable, so we report the straight-line
+  // distance of the nearest live bus on the route to the city centre — real
+  // data, no fabricated arrival time.
+  const nearestBusKm = selBuses.reduce<number | null>((min, b) => {
+    const km = haversineKm(b.lat, b.lng, CITY.lat, CITY.lng);
+    return min == null || km < min ? km : min;
+  }, null);
 
   // Delhi (NCT) boundary outline, projected once.
   const boundaryPath = useMemo(() => {
@@ -155,8 +163,7 @@ export function TransitPanel() {
           {/* Delhi NCT boundary */}
           <path
             d={boundaryPath}
-            fill="rgba(110,168,254,0.045)"
-            stroke="rgba(110,168,254,0.35)"
+            style={{ fill: "var(--mk-boundary-fill)", stroke: "var(--mk-boundary)" }}
             strokeWidth={1.5}
             strokeLinejoin="round"
           />
@@ -164,11 +171,11 @@ export function TransitPanel() {
           {metroPaths.map((p) => (
             <path
               key={p.key}
+              className="metro-underlay"
               d={p.d}
               fill="none"
               stroke={p.color}
               strokeWidth={1.3}
-              opacity={0.22}
               strokeLinecap="round"
             />
           ))}
@@ -180,14 +187,14 @@ export function TransitPanel() {
               <g style={{ transform: `translate(${c.x}px, ${c.y}px)` }}>
                 <defs>
                   <linearGradient id="sweepGrad" x1="0" y1="0" x2="1" y2="0">
-                    <stop offset="0%" stopColor="#6ea8fe" stopOpacity="0" />
-                    <stop offset="100%" stopColor="#6ea8fe" stopOpacity="0.28" />
+                    <stop offset="0%" style={{ stopColor: "var(--mk-radar)" }} stopOpacity="0" />
+                    <stop offset="100%" style={{ stopColor: "var(--mk-radar)" }} stopOpacity="0.3" />
                   </linearGradient>
                 </defs>
-                <circle r={140} fill="none" stroke="rgba(110,168,254,0.10)" />
-                <circle r={80} fill="none" stroke="rgba(110,168,254,0.08)" />
+                <circle r={140} fill="none" style={{ stroke: "var(--mk-radar)" }} opacity={0.14} />
+                <circle r={80} fill="none" style={{ stroke: "var(--mk-radar)" }} opacity={0.11} />
                 <path className="radar" d="M0,0 L150,-42 A156,156 0 0,1 150,42 Z" fill="url(#sweepGrad)" />
-                <circle r={4} fill="#6ea8fe" opacity={0.7} />
+                <circle r={4} style={{ fill: "var(--mk-radar)" }} opacity={0.7} />
               </g>
             );
           })()}
@@ -200,10 +207,10 @@ export function TransitPanel() {
               .join(" ");
             return (
               <g className="route-path">
-                <path d={d} fill="none" stroke="#ffffff" strokeWidth={3.4} opacity={0.25} strokeLinecap="round" strokeLinejoin="round" />
-                <path d={d} fill="none" stroke="#7ce0c3" strokeWidth={1.8} strokeLinecap="round" strokeLinejoin="round" pathLength={1} className="route-path-line" />
+                <path d={d} fill="none" style={{ stroke: "var(--mk-halo)" }} strokeWidth={3.4} opacity={0.3} strokeLinecap="round" strokeLinejoin="round" />
+                <path d={d} fill="none" style={{ stroke: "var(--mk-route)" }} strokeWidth={1.8} strokeLinecap="round" strokeLinejoin="round" pathLength={1} className="route-path-line" />
                 {pts.map((p, i) => (
-                  <circle key={i} cx={p.x} cy={p.y} r={1.7} fill="#eafff7" opacity={0.85} />
+                  <circle key={i} cx={p.x} cy={p.y} r={1.7} style={{ fill: "var(--mk-route)" }} opacity={0.9} />
                 ))}
               </g>
             );
@@ -223,7 +230,7 @@ export function TransitPanel() {
                 y1={prev.y}
                 x2={cur.x}
                 y2={cur.y}
-                stroke={b.stale ? "#fbbf24" : "#7ce0c3"}
+                style={{ stroke: b.stale ? "var(--mk-stale)" : "var(--mk-live)" }}
                 strokeWidth={1.6}
                 strokeLinecap="round"
                 className="bus-trail"
@@ -233,7 +240,7 @@ export function TransitPanel() {
 
           {plotted.map((b) => {
             const { x, y } = project(b.lat, b.lng);
-            const color = b.stale ? "#fbbf24" : "#7ce0c3";
+            const color = b.stale ? "var(--mk-stale)" : "var(--mk-live)";
             const isSel = selRoute != null && b.routeId === selRoute;
             const dimmed = selRoute != null && !isSel;
             return (
@@ -242,12 +249,14 @@ export function TransitPanel() {
                 className="bus"
                 style={{ transform: `translate(${x}px, ${y}px)`, color }}
               >
-                {!dense && !b.stale && <circle className="bus-pulse" r={4} fill={color} />}
+                {!dense && !b.stale && <circle className="bus-pulse" r={4} fill="currentColor" />}
                 <circle
                   className={`bus-hit ${dense ? "" : "bus-dot"}`}
                   r={isSel ? dotR + 2.2 : dotR}
-                  fill={isSel ? "#ffffff" : color}
-                  stroke={isSel ? color : "none"}
+                  style={{
+                    fill: isSel ? "var(--mk-sel)" : "currentColor",
+                    stroke: isSel ? "currentColor" : "none",
+                  }}
                   strokeWidth={isSel ? 2 : 0}
                   opacity={dimmed ? 0.18 : dense ? 0.85 : 1}
                   onClick={(e) => {
@@ -278,13 +287,13 @@ export function TransitPanel() {
                   y1={p.y}
                   x2={s.x}
                   y2={s.y}
-                  stroke="#b98cff"
+                  style={{ stroke: "var(--mk-pin)" }}
                   strokeWidth={1.8}
                   strokeDasharray="5 4"
                 />
-                <circle cx={s.x} cy={s.y} r={6} fill="none" stroke="#b98cff" strokeWidth={2} />
-                <circle cx={p.x} cy={p.y} r={5} fill="#b98cff" />
-                <circle cx={p.x} cy={p.y} r={10} fill="none" stroke="#b98cff" opacity={0.5}>
+                <circle cx={s.x} cy={s.y} r={6} fill="none" style={{ stroke: "var(--mk-pin)" }} strokeWidth={2} />
+                <circle cx={p.x} cy={p.y} r={5} style={{ fill: "var(--mk-pin)" }} />
+                <circle cx={p.x} cy={p.y} r={10} fill="none" style={{ stroke: "var(--mk-pin)" }} opacity={0.5}>
                   <animate attributeName="r" values="6;14" dur="1.6s" repeatCount="indefinite" />
                   <animate attributeName="opacity" values="0.6;0" dur="1.6s" repeatCount="indefinite" />
                 </circle>
@@ -320,12 +329,17 @@ export function TransitPanel() {
               <b>{fmtIst(selLastSeen)}</b> freshest GPS fix
             </div>
             <div>
+              <b>{nearestBusKm != null ? `~${nearestBusKm.toFixed(1)} km` : "—"}</b> nearest bus to
+              centre
+            </div>
+            <div>
               <b>~05:30–23:00</b> typical DTC hours
             </div>
           </div>
           <div className="hint">
-            Highlighted dots are every live bus on route {selRoute}. Route-level timetables
-            aren&apos;t published in the open feed.
+            Highlighted dots are every live bus on route {selRoute}. Distance is straight-line to
+            the city centre from the nearest live bus — the open feed has no reliable speed or
+            per-route timetable, so NETRA won&apos;t invent an arrival time.
           </div>
         </div>
       )}

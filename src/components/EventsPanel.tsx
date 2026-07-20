@@ -42,7 +42,7 @@ function downloadIcs(e: EventItem) {
   const ics = [
     "BEGIN:VCALENDAR",
     "VERSION:2.0",
-    "PRODID:-//Delhi City Dashboard//EN",
+    "PRODID:-//NETRA//EN",
     "BEGIN:VEVENT",
     `UID:${e.id}@delhi-dashboard`,
     `DTSTAMP:${fmt(new Date())}`,

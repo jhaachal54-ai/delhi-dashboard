@@ -1,6 +1,7 @@
 import { METRO_LINES } from "@/lib/metro";
 import { PLACES } from "@/lib/places";
 import { Panel } from "./Panel";
+import { RestaurantRow } from "./RestaurantRow";
 
 const LINE_BY_KEY = new Map(METRO_LINES.map((l) => [l.key, l]));
 
@@ -37,21 +38,7 @@ export function RestaurantsPanel() {
               </span>
             </div>
             {p.restaurants.map((r) => (
-              <div className="rest-row" key={r.name}>
-                <b>
-                  {r.name}{" "}
-                  <a
-                    className="maps-link"
-                    href={`https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(`${r.name} ${p.name} Delhi`)}`}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    title="Open in Google Maps"
-                  >
-                    📍 map ↗
-                  </a>
-                </b>
-                <span>{r.knownFor}</span>
-              </div>
+              <RestaurantRow key={r.name} r={r} area={p.name} />
             ))}
           </div>
         ))}

@@ -18,6 +18,23 @@ function aqiColor(aqi: number | null): string {
 const R = 56;
 const C = 2 * Math.PI * R;
 
+// Rough typical US-AQI for Delhi by month (monsoon clears the air; winter is
+// brutal). Used only to give "better/worse than usual" context — not precise.
+const TYPICAL_AQI = [385, 250, 175, 195, 205, 175, 95, 85, 120, 235, 350, 360];
+
+function seasonalContext(aqi: number | null): string | null {
+  if (aqi == null) return null;
+  const month = Number(
+    new Intl.DateTimeFormat("en-US", { timeZone: "Asia/Kolkata", month: "numeric" }).format(new Date())
+  );
+  const typical = TYPICAL_AQI[month - 1];
+  const monthName = new Intl.DateTimeFormat("en-US", { timeZone: "Asia/Kolkata", month: "long" }).format(new Date());
+  const diff = aqi - typical;
+  if (Math.abs(diff) <= 25) return `About typical for ${monthName} in Delhi (usually ~${typical}).`;
+  if (diff < 0) return `Cleaner than a usual ${monthName} day (typically ~${typical}).`;
+  return `Worse than a usual ${monthName} day (typically ~${typical}).`;
+}
+
 function Gauge({ aqi, category }: { aqi: number | null; category: string }) {
   const color = aqiColor(aqi);
   const animated = useCountUp(aqi);
@@ -115,6 +132,8 @@ export function AirPanel() {
             </div>
           </div>
 
+          {seasonalContext(d.usAqi) && <div className="hint">📅 {seasonalContext(d.usAqi)}</div>}
+
           <div className="pollutants">
             <div className="p">
               PM2.5 <b><AnimatedNumber value={d.pm2_5} /></b>
@@ -134,6 +153,11 @@ export function AirPanel() {
             <div className="p">
               SO₂ <b><AnimatedNumber value={d.so2} /></b>
             </div>
+            {d.dust != null && (
+              <div className="p" title="Airborne dust (µg/m³) — Thar & construction dust">
+                🏜️ Dust <b><AnimatedNumber value={d.dust} /></b>
+              </div>
+            )}
           </div>
         </>
       )}

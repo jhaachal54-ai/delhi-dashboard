@@ -30,6 +30,18 @@ const TITLES = {
   "five-senses": "Garden of Five Senses",
   "chhatarpur": "Chhatarpur Temple",
   "kingdom-of-dreams": "Kingdom of Dreams",
+  "yashobhoomi": "Yashobhoomi",
+  "bharat-mandapam": "Bharat Mandapam",
+  "delhi-zoo": "Delhi Zoo",
+  "waste-to-wonder": "Waste to Wonder Park, Delhi",
+  "sunder-nursery": "Sunder Nursery",
+  "nizamuddin-dargah": "Nizamuddin Dargah",
+  "jhandewalan-hanuman": "Jhandewalan Hanuman Temple",
+  "birla-mandir": "Laxminarayan Temple",
+  "agrasen-baoli": "Agrasen ki Baoli",
+  "national-museum": "National Museum, New Delhi",
+  "rashtrapati-bhavan": "Rashtrapati Bhavan",
+  "majnu-ka-tila": "Majnu-ka-tilla",
 };
 
 // Resume: keep whatever earlier runs already fetched.
@@ -56,7 +68,7 @@ for (const [key, title] of Object.entries(TITLES)) {
   } catch (e) {
     console.log("FAIL ", key, String(e).slice(0, 40));
   }
-  await new Promise((r) => setTimeout(r, 1200)); // stay under Wikipedia's rate limit
+  await new Promise((r) => setTimeout(r, 2500)); // stay under Wikipedia's rate limit
 }
 writeFileSync("src/data/placeImages.json", JSON.stringify(out));
 console.log("images:", Object.keys(out).length, "of", Object.keys(TITLES).length);

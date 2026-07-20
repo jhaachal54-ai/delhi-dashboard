@@ -68,6 +68,7 @@ export interface AirData {
   o3: number | null;
   co: number | null;
   so2: number | null;
+  dust: number | null; // µg/m³ — Saharan/Thar dust, very relevant to Delhi
   observedAt: string | null;
   // Last ~24h of US AQI values for a sparkline (nulls preserved as gaps).
   series: { t: string; aqi: number | null }[];
@@ -112,6 +113,8 @@ export interface TrendData {
 export interface RegionWx {
   key: string;
   name: string;
+  lat: number;
+  lng: number;
   temperature: number | null;
   apparent: number | null;
   precipitation: number | null; // mm in the current period
@@ -132,6 +135,17 @@ export interface HourlyWx {
 }
 
 // ─── Weather ──────────────────────────────────────────────────────────────────
+export interface DailyWx {
+  date: string; // "2026-07-15"
+  label: string; // "Wed 15"
+  tempMax: number | null;
+  tempMin: number | null;
+  rainSum: number | null; // mm
+  rainProb: number | null; // 0–100 %
+  code: number | null;
+  emoji: string;
+}
+
 export interface WeatherData {
   temperature: number | null;
   apparent: number | null;
@@ -147,4 +161,54 @@ export interface WeatherData {
   sunrise: string | null; // "06:12" IST
   sunset: string | null;
   hourly: HourlyWx[]; // next 24 hours
+  daily: DailyWx[]; // next 7 days
+}
+
+// ─── Flights (IGI Airport) ────────────────────────────────────────────────────
+export interface FlightItem {
+  flight: string; // "AI 809"
+  airline: string;
+  city: string; // origin (arrivals) or destination (departures)
+  time: string; // "14:35" scheduled, IST
+  status: string; // "On time", "Delayed", "Landed"...
+  terminal: string | null;
+  direction: "arrival" | "departure";
+}
+export interface FlightsData {
+  arrivals: FlightItem[];
+  departures: FlightItem[];
+}
+
+// ─── Trains (New Delhi departures) ────────────────────────────────────────────
+export interface TrainItem {
+  number: string; // "12951"
+  name: string; // "Mumbai Rajdhani"
+  to: string; // destination
+  departs: string; // "16:25"
+  platform: string | null;
+  status: string; // "On time" / "Delayed 20m"
+}
+export interface TrainsData {
+  station: string; // "New Delhi (NDLS)"
+  trains: TrainItem[];
+}
+
+// ─── Currency (tourist rates) ─────────────────────────────────────────────────
+export interface RatesData {
+  base: "INR";
+  perUsd: number | null; // ₹ per 1 USD
+  perEur: number | null;
+  perGbp: number | null;
+}
+
+// ─── City news ────────────────────────────────────────────────────────────────
+export interface NewsItem {
+  title: string;
+  source: string;
+  url: string | null;
+  publishedAt: string | null;
+  image: string | null;
+}
+export interface NewsData {
+  items: NewsItem[];
 }

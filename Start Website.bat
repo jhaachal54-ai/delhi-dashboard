@@ -1,10 +1,10 @@
 @echo off
-title Delhi City Dashboard
+title NETRA — NCR Events, Transit, Rain ^& Air
 cd /d "%~dp0"
 set "PATH=%LOCALAPPDATA%\Programs\nodejs\node-v24.18.0-win-x64;%PATH%"
 echo.
 echo   ============================================
-echo    Delhi City Dashboard
+echo    NETRA — NCR Events, Transit, Rain ^& Air
 echo   ============================================
 echo.
 echo   Starting the website (takes ~20-30 seconds)...

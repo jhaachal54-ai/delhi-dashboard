@@ -1,7 +1,7 @@
 {
-  "name": "Delhi City Dashboard",
-  "short_name": "DelhiDash",
-  "description": "Live Delhi buses, metro planner, events, food, air quality and weather.",
+  "name": "NETRA — NCR Events, Transit, Rain & Air",
+  "short_name": "NETRA",
+  "description": "The eye on Delhi: live buses, metro planner, events, food, air quality and weather.",
   "start_url": "/",
   "display": "standalone",
   "background_color": "#070b18",
